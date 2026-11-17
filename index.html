@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Costing Calculator</title>
+<meta name="color-scheme" content="light">
+<style>
+:root{
+  --ink:#1b2333; --muted:#5d6678; --line:#d9dce3; --paper:#f6f4ef; --card:#fff;
+  --navy:#1d2a44; --gold:#a8843c; --good:#24724a; --bad:#b33a2e;
+  --c1:#1d2a44; --c2:#a8843c; --c3:#5b7fa6; --c4:#c9a96e; --c5:#8a93a5;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink); background: var(--paper);
+}
+*{box-sizing:border-box}
+body{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:650}
+.num,.money{font-variant-numeric:tabular-nums}
+
+header{background:var(--navy);color:#f3eee2;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+header h1{font-size:1.05rem;letter-spacing:.02em;margin-right:auto}
+header h1 span{color:var(--c4);font-weight:500}
+header select,header button{background:#2a3958;border:1px solid #3d4d70;color:#f3eee2;border-radius:6px;padding:6px 10px}
+header button:hover{background:#344568}
+header label{display:flex;gap:6px;align-items:center;font-size:.85rem;color:#cfd5e2}
+
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;padding:20px;max-width:1320px;margin:0 auto}
+@media (max-width:980px){main{grid-template-columns:1fr;padding:12px;padding-bottom:90px}}
+
+section.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+section.card h2{font-size:1rem;display:flex;align-items:baseline;gap:10px}
+section.card h2 .total{margin-left:auto;font-size:.95rem;font-weight:600;color:var(--navy)}
+.hint{color:var(--muted);font-size:.85rem;margin:4px 0 12px}
+
+.product-head{display:grid;grid-template-columns:1fr;gap:10px}
+.product-head input.name{font-size:1.35rem;font-weight:650;border:0;border-bottom:1px solid var(--line);padding:4px 0;width:100%;background:transparent}
+.product-head input.name:focus{outline:none;border-bottom-color:var(--gold)}
+.product-head textarea{width:100%;min-height:40px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;resize:vertical}
+
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+.field input,.field select{border:1px solid var(--line);border-radius:6px;padding:7px 8px;background:#fff;color:var(--ink);width:100%}
+.field small{color:var(--muted);font-size:.78rem}
+input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--gold) 55%,transparent);outline-offset:0;border-color:var(--gold)}
+
+/* row tables */
+.rows{display:grid;gap:6px}
+.row{display:grid;gap:6px;align-items:end}
+.row label{display:flex;flex-direction:column;gap:2px;min-width:0}
+.row label span{font-size:.75rem;color:var(--muted)}
+.row input,.row select{border:1px solid var(--line);border-radius:6px;padding:6px 7px;width:100%;min-width:0;background:#fff}
+.row .cost{font-variant-numeric:tabular-nums;text-align:right;padding:7px 0;font-weight:600;white-space:nowrap}
+.row .cost.warn{color:var(--bad);font-weight:500;font-size:.8rem;white-space:normal}
+.row .del{border:0;background:none;color:var(--muted);cursor:pointer;padding:6px;border-radius:6px;line-height:1}
+.row .del:hover{background:#f1e4e2;color:var(--bad)}
+.rows.head .row label span{display:none}
+.headrow{display:grid;gap:6px;font-size:.75rem;color:var(--muted);padding-bottom:2px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.headrow span:last-of-type{text-align:right}
+.add{margin-top:10px;border:1px dashed var(--line);background:none;border-radius:6px;padding:6px 12px;color:var(--navy);cursor:pointer}
+.add:hover{border-color:var(--gold);background:#faf6ec}
+
+.g-ing{grid-template-columns:1.6fr .8fr .8fr .9fr .9fr .8fr .9fr 28px}
+.g-pack{grid-template-columns:1.8fr 1fr 1fr 1fr .9fr 28px}
+.g-labor{grid-template-columns:1.8fr .7fr .9fr 1fr .9fr 28px}
+.g-elec{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
+.g-over{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
+
+@media (min-width:721px){ .row label span{display:none} }
+@media (max-width:720px){
+  .headrow{display:none}
+  .row{grid-template-columns:1fr 1fr !important;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row label:first-child{grid-column:1 / -1}
+  .row .cost{grid-column:1;text-align:left}
+  .row .del{grid-column:2;justify-self:end}
+}
+
+/* results */
+aside{position:sticky;top:12px;align-self:start;display:grid;gap:16px}
+@media (max-width:980px){aside{position:static}}
+.res{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px}
+.res h2{font-size:.95rem;margin-bottom:10px}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.big div{background:var(--paper);border-radius:6px;padding:10px}
+.big b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
+.big span{font-size:.78rem;color:var(--muted)}
+dl{display:grid;grid-template-columns:1fr auto;gap:6px 12px;margin:0;font-size:.92rem}
+dt{color:var(--muted)}
+dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+dl hr{grid-column:1/-1;border:0;border-top:1px solid var(--line);margin:4px 0;width:100%}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.msg{font-size:.85rem;color:var(--bad);margin:0 0 10px}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--paper);margin:4px 0 10px}
+.bar i{display:block;height:100%}
+.legend{display:grid;grid-template-columns:auto 1fr auto auto;gap:4px 8px;font-size:.85rem;align-items:center}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend .num{text-align:right}
+.legend .pct{color:var(--muted);text-align:right;min-width:42px}
+.target{display:flex;gap:8px;align-items:end;margin-bottom:10px;flex-wrap:wrap}
+.target .field{flex:1;min-width:110px}
+.useprice{border:1px solid var(--gold);background:#faf6ec;color:var(--navy);border-radius:6px;padding:6px 10px;cursor:pointer}
+.useprice:hover{background:#f3ead4}
+.useprice[hidden]{display:none}
+.proj{width:100%;border-collapse:collapse;font-size:.9rem}
+.proj th,.proj td{padding:5px 4px;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+.proj th:first-child,.proj td:first-child{text-align:left;color:var(--muted);font-weight:400}
+.proj thead th{font-size:.78rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--line)}
+.proj td{font-weight:600}
+
+/* phone summary strip */
+.strip{display:none}
+@media (max-width:980px){
+  .strip{display:grid;grid-template-columns:repeat(3,1fr);position:fixed;left:0;right:0;bottom:0;background:var(--navy);color:#f3eee2;padding:10px 12px;gap:8px;z-index:5}
+  .strip div{font-size:.72rem;color:#c3cad8}
+  .strip b{display:block;font-size:1rem;color:#fff;font-variant-numeric:tabular-nums}
+}
+
+dialog{border:1px solid var(--line);border-radius:8px;padding:20px;max-width:360px}
+dialog::backdrop{background:rgb(20 26 40 / .45)}
+dialog p{margin:0 0 16px}
+dialog menu{display:flex;gap:8px;justify-content:flex-end;margin:0;padding:0}
+dialog button{border-radius:6px;padding:6px 14px;border:1px solid var(--line);background:#fff;cursor:pointer}
+dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+
+@media print{
+  header .tools,.add,.del,.strip,.useprice{display:none!important}
+  header{background:none;color:#000;padding:0 0 8px}
+  main{grid-template-columns:1fr;padding:0}
+  aside{position:static}
+  section.card,.res{break-inside:avoid;border-color:#bbb}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Costing Calculator <span>· Cygnus Tools</span></h1>
+  <div class="tools" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <label>Product <select id="pick" aria-label="Product"></select></label>
+    <button id="btnNew" type="button">New</button>
+    <button id="btnCopy" type="button">Duplicate</button>
+    <button id="btnDel" type="button">Delete</button>
+    <button id="btnExport" type="button">Export</button>
+    <button id="btnImport" type="button">Import</button>
+    <button id="btnPrint" type="button">Print</button>
+    <label>Currency <select id="currency">
+      <option value="PHP">₱ PHP</option>
+      <option value="THB">฿ THB</option>
+      <option value="USD">$ USD</option>
+      <option value="EUR">€ EUR</option>
+    </select></label>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+  </div>
+</header>
+
+<main>
+  <div id="inputs">
+    <section class="card product-head">
+      <input class="name" id="pName" aria-label="Product name" placeholder="Product name">
+      <textarea id="pNotes" aria-label="Notes" placeholder="Notes, such as recipe version or supplier"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>Batch</h2>
+      <p class="hint">How many pieces one batch makes and how many batches you run a month.</p>
+      <div class="fields">
+        <label class="field">Pieces per batch<input type="number" min="0" step="any" inputmode="decimal" data-k="output"></label>
+        <label class="field">Unit name<input type="text" data-k="unitName" placeholder="bar, box, pack"></label>
+        <label class="field">Reject rate %<input type="number" min="0" max="99" step="any" inputmode="decimal" data-k="reject"><small>Broken or bloomed pieces you can't sell.</small></label>
+        <label class="field">Batches a month<input type="number" min="0" step="any" inputmode="decimal" data-k="batchesMonth"></label>
+      </div>
+    </section>
+
+    <section class="card" data-sec="ingredients">
+      <h2>Ingredients <span class="total" data-total="ingredients"></span></h2>
+      <p class="hint">Enter what you paid and how much you got, then how much one batch uses.</p>
+      <div class="headrow g-ing"><span>Ingredient</span><span>Bought</span><span>Unit</span><span>Price paid</span><span>Used per batch</span><span>Unit</span><span>Cost</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="ingredients">Add ingredient</button>
+    </section>
+
+    <section class="card" data-sec="packaging">
+      <h2>Packaging <span class="total" data-total="packaging"></span></h2>
+      <p class="hint">Counted on sellable pieces only. Enter the pack price and how many pieces the pack holds.</p>
+      <div class="headrow g-pack"><span>Item</span><span>Pack price</span><span>Pieces in pack</span><span>Used per piece</span><span>Per piece</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="packaging">Add packaging</button>
+    </section>
+
+    <section class="card" data-sec="labor">
+      <h2>Labor <span class="total" data-total="labor"></span></h2>
+      <p class="hint">Hours each person spends on one batch. For a daily wage, divide it by 8 for the hourly rate.</p>
+      <div class="headrow g-labor"><span>Role</span><span>People</span><span>Hours per batch</span><span>Rate per hour</span><span>Cost</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="labor">Add worker</button>
+    </section>
+
+    <section class="card" data-sec="electricity">
+      <h2>Electricity <span class="total" data-total="electricity"></span></h2>
+      <p class="hint">Watts are on the machine's label and the rate per kWh is on your electric bill.</p>
+      <div class="fields" style="margin-bottom:12px">
+        <label class="field">Rate per kWh<input type="number" min="0" step="any" inputmode="decimal" data-k="kwhRate"></label>
+      </div>
+      <div class="headrow g-elec"><span>Machine</span><span>Watts</span><span>Hours per batch</span><span>Cost</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="electricity">Add machine</button>
+    </section>
+
+    <section class="card" data-sec="overhead">
+      <h2>Other overhead <span class="total" data-total="overhead"></span></h2>
+      <p class="hint">Rent, water, LPG, cleaning and the like. Monthly amounts are split across your batches a month.</p>
+      <div class="headrow g-over"><span>Item</span><span>Amount</span><span>Per</span><span>Per batch</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="overhead">Add overhead</button>
+    </section>
+
+    <section class="card">
+      <h2>Selling</h2>
+      <p class="hint">Gross profit is price minus cost. Net profit also takes out the fees and taxes below.</p>
+      <div class="fields">
+        <label class="field">Selling price per piece<input type="number" min="0" step="any" inputmode="decimal" data-k="price"></label>
+        <label class="field">Commission and fees %<input type="number" min="0" step="any" inputmode="decimal" data-k="feePct"><small>Reseller cut, Shopee or Lazada fees, card fees.</small></label>
+        <label class="field">Sales tax %<input type="number" min="0" step="any" inputmode="decimal" data-k="salesTaxPct"><small>VAT or percentage tax, as a percent of the price.</small></label>
+        <label class="field">Delivery and marketing per piece<input type="number" min="0" step="any" inputmode="decimal" data-k="otherPerPiece"></label>
+        <label class="field">Income tax %<input type="number" min="0" step="any" inputmode="decimal" data-k="incomeTaxPct"><small>Taken from profit.</small></label>
+        <label class="field">Sell-through %<input type="number" min="0" max="100" step="any" inputmode="decimal" data-k="sellThrough"><small>Share of sellable pieces you expect to sell, for the projection.</small></label>
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <div class="res">
+      <h2>Per piece</h2>
+      <p class="msg" id="msg" hidden></p>
+      <div class="big">
+        <div><span>Cost</span><b id="rUnit">0</b></div>
+        <div><span>Selling price</span><b id="rPrice">0</b></div>
+      </div>
+      <dl>
+        <dt>Gross profit</dt><dd id="rGross"></dd>
+        <dt>Gross margin</dt><dd id="rGrossPct"></dd>
+        <dt>Markup on cost</dt><dd id="rMarkup"></dd>
+        <hr>
+        <dt>Fees and sales tax</dt><dd id="rFees"></dd>
+        <dt>Delivery and marketing</dt><dd id="rOther"></dd>
+        <dt>Income tax</dt><dd id="rIncTax"></dd>
+        <dt>Net profit</dt><dd id="rNet"></dd>
+        <dt>Net margin</dt><dd id="rNetPct"></dd>
+        <hr>
+        <dt>Break-even price</dt><dd id="rBreak"></dd>
+      </dl>
+    </div>
+
+    <div class="res">
+      <h2>Recommended price</h2>
+      <div class="target">
+        <label class="field">Target margin %<input type="number" min="0" max="99" step="any" inputmode="decimal" id="tPct" data-k="targetPct"></label>
+        <label class="field">Margin type<select id="tType" data-k="targetType">
+          <option value="net">Net</option>
+          <option value="gross">Gross</option>
+        </select></label>
+      </div>
+      <dl>
+        <dt id="tLabel">Sell for</dt><dd id="tPrice"></dd>
+        <dt>Gross profit</dt><dd id="tGross"></dd>
+        <dt>Net profit</dt><dd id="tNet"></dd>
+      </dl>
+      <p class="msg" id="tMsg" hidden></p>
+      <button class="useprice" id="tUse" type="button" hidden>Use this price</button>
+    </div>
+
+    <div class="res">
+      <h2>Projection</h2>
+      <p class="msg" id="pMsg" hidden></p>
+      <table class="proj">
+        <thead><tr><th></th><th>Batch</th><th>Month</th><th>Year</th></tr></thead>
+        <tbody>
+          <tr><td>Pieces sold</td><td id="pSoldB"></td><td id="pSoldM"></td><td id="pSoldY"></td></tr>
+          <tr><td>Revenue</td><td id="pRevB"></td><td id="pRevM"></td><td id="pRevY"></td></tr>
+          <tr><td>Production cost</td><td id="pCostB"></td><td id="pCostM"></td><td id="pCostY"></td></tr>
+          <tr><td>Gross profit</td><td id="pGrossB"></td><td id="pGrossM"></td><td id="pGrossY"></td></tr>
+          <tr><td>Net profit</td><td id="pNetB"></td><td id="pNetM"></td><td id="pNetY"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="res">
+      <h2>Where the cost goes</h2>
+      <div class="bar" id="bar"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </aside>
+</main>
+
+<div class="strip" aria-hidden="true">
+  <div>Cost<b id="sUnit"></b></div>
+  <div>Price<b id="sPrice"></b></div>
+  <div>Net margin<b id="sNet"></b></div>
+</div>
+
+<dialog id="delDialog">
+  <form method="dialog">
+    <p id="delText"></p>
+    <menu>
+      <button value="cancel" autofocus>Cancel</button>
+      <button value="delete" class="danger">Delete</button>
+    </menu>
+  </form>
+</dialog>
+
+<script>
+"use strict";
+const KEY = "cygnus-costing-v1";
+
+/* ---------- units ---------- */
+const UNITS = {
+  g:{f:"mass",x:1}, kg:{f:"mass",x:1000}, oz:{f:"mass",x:28.3495}, lb:{f:"mass",x:453.592},
+  ml:{f:"vol",x:1}, L:{f:"vol",x:1000},
+  pc:{f:"count",x:1}, dozen:{f:"count",x:12}
+};
+
+/* ---------- section definitions ---------- */
+const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
+
+const SECTIONS = {
+  ingredients: {
+    grid: "g-ing",
+    cols: [
+      {k:"name", label:"Ingredient", type:"text"},
+      {k:"buyQty", label:"Bought"},
+      {k:"buyUnit", label:"Unit", type:"unit"},
+      {k:"price", label:"Price paid"},
+      {k:"useQty", label:"Used per batch"},
+      {k:"useUnit", label:"Unit", type:"unit"}
+    ],
+    blank: () => ({name:"", buyQty:"", buyUnit:"kg", price:"", useQty:"", useUnit:"g"}),
+    cost(r){
+      const a = UNITS[r.buyUnit], b = UNITS[r.useUnit];
+      if (!a || !b) return 0;
+      if (a.f !== b.f) return {warn:`${r.buyUnit} and ${r.useUnit} don't convert`};
+      const bought = n(r.buyQty) * a.x;
+      if (!bought) return 0;
+      return n(r.price) * (n(r.useQty) * b.x) / bought;
+    }
+  },
+  packaging: {
+    grid: "g-pack",
+    cols: [
+      {k:"name", label:"Item", type:"text"},
+      {k:"price", label:"Pack price"},
+      {k:"pcs", label:"Pieces in pack"},
+      {k:"use", label:"Used per piece"}
+    ],
+    blank: () => ({name:"", price:"", pcs:"1", use:"1"}),
+    cost(r){ const p = n(r.pcs); return p ? n(r.price) / p * n(r.use) : 0; }
+  },
+  labor: {
+    grid: "g-labor",
+    cols: [
+      {k:"name", label:"Role", type:"text"},
+      {k:"people", label:"People"},
+      {k:"hours", label:"Hours per batch"},
+      {k:"rate", label:"Rate per hour"}
+    ],
+    blank: () => ({name:"", people:"1", hours:"", rate:""}),
+    cost(r){ return n(r.people) * n(r.hours) * n(r.rate); }
+  },
+  electricity: {
+    grid: "g-elec",
+    cols: [
+      {k:"name", label:"Machine", type:"text"},
+      {k:"watts", label:"Watts"},
+      {k:"hours", label:"Hours per batch"}
+    ],
+    blank: () => ({name:"", watts:"", hours:""}),
+    cost(r, p){ return n(r.watts) / 1000 * n(r.hours) * n(p.kwhRate); }
+  },
+  overhead: {
+    grid: "g-over",
+    cols: [
+      {k:"name", label:"Item", type:"text"},
+      {k:"amount", label:"Amount"},
+      {k:"per", label:"Per", type:"select", options:[["month","Month"],["batch","Batch"]]}
+    ],
+    blank: () => ({name:"", amount:"", per:"month"}),
+    cost(r, p){
+      if (r.per === "batch") return n(r.amount);
+      const b = n(p.batchesMonth);
+      if (!n(r.amount)) return 0;
+      return b ? n(r.amount) / b : {warn:"Set batches a month"};
+    }
+  }
+};
+
+/* ---------- data ---------- */
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function blankProduct(name){
+  return {
+    id: uid(), name: name || "New product", notes: "",
+    output: "", unitName: "piece", reject: "0", batchesMonth: "",
+    kwhRate: "",
+    price: "", feePct: "0", salesTaxPct: "0", otherPerPiece: "0", incomeTaxPct: "0", sellThrough: "100",
+    targetPct: "40", targetType: "net",
+    ingredients: [SECTIONS.ingredients.blank()],
+    packaging: [SECTIONS.packaging.blank()],
+    labor: [SECTIONS.labor.blank()],
+    electricity: [SECTIONS.electricity.blank()],
+    overhead: [SECTIONS.overhead.blank()]
+  };
+}
+
+function exampleProduct(){
+  return {
+    id: uid(), name: "Example: Dark chocolate bar 100 g",
+    notes: "Sample figures. Replace them with your own prices or delete this product.",
+    output: "50", unitName: "bar", reject: "4", batchesMonth: "8",
+    kwhRate: "12",
+    price: "180", feePct: "0", salesTaxPct: "3", otherPerPiece: "5", incomeTaxPct: "0", sellThrough: "90",
+    targetPct: "40", targetType: "net",
+    ingredients: [
+      {name:"Cacao nibs", buyQty:"10", buyUnit:"kg", price:"4500", useQty:"3.2", useUnit:"kg"},
+      {name:"Sugar", buyQty:"1", buyUnit:"kg", price:"90", useQty:"1.5", useUnit:"kg"},
+      {name:"Cocoa butter", buyQty:"1", buyUnit:"kg", price:"1200", useQty:"300", useUnit:"g"}
+    ],
+    packaging: [
+      {name:"Printed box", price:"1200", pcs:"100", use:"1"},
+      {name:"Foil wrap", price:"750", pcs:"500", use:"1"},
+      {name:"Label sheet", price:"60", pcs:"24", use:"1"}
+    ],
+    labor: [
+      {name:"Chocolatier", people:"1", hours:"6", rate:"80"},
+      {name:"Packer", people:"1", hours:"2", rate:"65"}
+    ],
+    electricity: [
+      {name:"Melanger", watts:"250", hours:"24"},
+      {name:"Tempering machine", watts:"600", hours:"2"},
+      {name:"Chiller", watts:"150", hours:"3"}
+    ],
+    overhead: [
+      {name:"Rent share", amount:"8000", per:"month"},
+      {name:"Water", amount:"600", per:"month"},
+      {name:"LPG", amount:"40", per:"batch"}
+    ]
+  };
+}
+
+let store;
+function load(){
+  try { store = JSON.parse(localStorage.getItem(KEY)); } catch { store = null; }
+  if (!store || !Array.isArray(store.products) || !store.products.length){
+    const ex = exampleProduct();
+    store = {currency:"PHP", current: ex.id, products:[ex]};
+  }
+  if (!store.products.some(p => p.id === store.current)) store.current = store.products[0].id;
+}
+let saveTimer;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch {}
+  }, 250);
+}
+const cur = () => store.products.find(p => p.id === store.current);
+
+/* ---------- money ---------- */
+let fmt;
+function setFmt(){
+  try {
+    fmt = new Intl.NumberFormat(undefined, {style:"currency", currency: store.currency, minimumFractionDigits:2, maximumFractionDigits:2});
+  } catch {
+    fmt = new Intl.NumberFormat(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+}
+const money = v => Number.isFinite(v) ? fmt.format(v) : "–";
+const moneyR = v => Number.isFinite(v) ? new Intl.NumberFormat(undefined,{style:"currency",currency:store.currency,maximumFractionDigits:0}).format(v) : "–";
+const pct = v => Number.isFinite(v) ? (v * 100).toFixed(1) + "%" : "–";
+const count = v => Number.isFinite(v) ? new Intl.NumberFormat(undefined,{maximumFractionDigits:0}).format(v) : "–";
+
+/* ---------- calculation ---------- */
+function calc(p){
+  const sum = sec => p[sec].reduce((s, r) => {
+    const c = SECTIONS[sec].cost(r, p);
+    return s + (typeof c === "number" ? c : 0);
+  }, 0);
+
+  const ingredients = sum("ingredients");
+  const packPerPiece = sum("packaging");
+  const labor = sum("labor");
+  const electricity = sum("electricity");
+  const overhead = sum("overhead");
+
+  const output = n(p.output);
+  const good = output * (1 - Math.min(n(p.reject), 99) / 100);
+  const packaging = packPerPiece * good;
+  const batchCost = ingredients + packaging + labor + electricity + overhead;
+  const unit = good > 0 ? batchCost / good : NaN;
+
+  const price = n(p.price);
+  const f = n(p.feePct) / 100, t = n(p.salesTaxPct) / 100, it = n(p.incomeTaxPct) / 100;
+  const other = n(p.otherPerPiece);
+
+  const perPiece = pr => {
+    const gross = pr - unit;
+    const fees = pr * (f + t);
+    const pretax = gross - fees - other;
+    const incTax = Math.max(0, pretax) * it;
+    const net = pretax - incTax;
+    return {gross, fees, incTax, net};
+  };
+
+  const pp = perPiece(price);
+  const breakEven = (1 - f - t) > 0 ? (unit + other) / (1 - f - t) : NaN;
+
+  // recommended price for a target margin
+  const m = n(p.targetPct) / 100;
+  let target = NaN, targetErr = "";
+  if (!(good > 0)) targetErr = "";
+  else if (p.targetType === "gross"){
+    target = m < 1 ? unit / (1 - m) : NaN;
+    if (!(m < 1)) targetErr = "A gross margin has to be under 100%.";
+  } else {
+    // net = (p(1-f-t) - unit - other)(1-it) when profit is positive; solve net/p = m
+    const denom = (1 - f - t) * (1 - it) - m;
+    if (denom > 0) target = (unit + other) * (1 - it) / denom;
+    else targetErr = "No price reaches that net margin with these fees and taxes. Lower the target or the fees.";
+  }
+  const tp = Number.isFinite(target) ? perPiece(target) : null;
+
+  // projection: production cost counts every batch, sales count sold pieces
+  const batches = n(p.batchesMonth);
+  const sold = good * Math.min(n(p.sellThrough), 100) / 100;
+  const projBatch = () => {
+    const revenue = sold * price;
+    const gross = revenue - batchCost;
+    const pretax = gross - revenue * (f + t) - sold * other;
+    const net = pretax - Math.max(0, pretax) * it;
+    return {sold, revenue, cost: batchCost, gross, net};
+  };
+  const pb = projBatch();
+  const scale = (o, k) => Object.fromEntries(Object.entries(o).map(([key, v]) => [key, v * k]));
+
+  return {
+    ingredients, packaging, packPerPiece, labor, electricity, overhead,
+    output, good, batchCost, unit, price, other,
+    gross: pp.gross, fees: pp.fees, incTax: pp.incTax, net: pp.net,
+    grossPct: price ? pp.gross / price : NaN,
+    netPct: price ? pp.net / price : NaN,
+    markup: unit > 0 ? pp.gross / unit : NaN,
+    breakEven,
+    target, targetErr, tp,
+    proj: {batch: pb, month: batches ? scale(pb, batches) : null, year: batches ? scale(pb, batches * 12) : null}
+  };
+}
+
+/* ---------- rendering ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+
+function renderPicker(){
+  const pick = $("#pick");
+  pick.replaceChildren(...store.products.map(p => {
+    const o = document.createElement("option");
+    o.value = p.id; o.textContent = p.name || "Untitled";
+    return o;
+  }));
+  pick.value = store.current;
+  $("#currency").value = store.currency;
+}
+
+function renderRows(sec){
+  const p = cur(), def = SECTIONS[sec];
+  const box = document.querySelector(`[data-sec="${sec}"] .rows`);
+  box.replaceChildren(...p[sec].map((r, i) => {
+    const row = document.createElement("div");
+    row.className = "row " + def.grid;
+    for (const c of def.cols){
+      const lab = document.createElement("label");
+      const sp = document.createElement("span"); sp.textContent = c.label;
+      let el;
+      if (c.type === "unit" || c.type === "select"){
+        el = document.createElement("select");
+        const opts = c.type === "unit" ? Object.keys(UNITS).map(u => [u, u]) : c.options;
+        for (const [v, t] of opts){ const o = document.createElement("option"); o.value = v; o.textContent = t; el.append(o); }
+      } else {
+        el = document.createElement("input");
+        if (c.type === "text") el.type = "text";
+        else { el.type = "number"; el.min = "0"; el.step = "any"; el.inputMode = "decimal"; }
+      }
+      el.value = r[c.k] ?? "";
+      el.dataset.sec = sec; el.dataset.i = i; el.dataset.col = c.k;
+      el.setAttribute("aria-label", c.label);
+      lab.append(sp, el);
+      row.append(lab);
+    }
+    const cost = document.createElement("div");
+    cost.className = "cost"; cost.dataset.cost = sec + ":" + i;
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "del"; del.textContent = "✕";
+    del.dataset.delsec = sec; del.dataset.i = i;
+    del.setAttribute("aria-label", "Remove row");
+    row.append(cost, del);
+    return row;
+  }));
+}
+
+function renderProduct(){
+  const p = cur();
+  $("#pName").value = p.name;
+  $("#pNotes").value = p.notes || "";
+  $$("[data-k]").forEach(el => { el.value = p[el.dataset.k] ?? ""; });
+  Object.keys(SECTIONS).forEach(renderRows);
+  update();
+}
+
+function setNum(id, v, kind){
+  const el = document.getElementById(id);
+  el.textContent = kind === "pct" ? pct(v) : kind === "count" ? count(v) : kind === "round" ? moneyR(v) : money(v);
+  el.classList.toggle("neg", Number.isFinite(v) && v < 0 && kind !== "count");
+}
+
+function update(){
+  const p = cur(), r = calc(p);
+
+  // row costs
+  for (const sec of Object.keys(SECTIONS)){
+    p[sec].forEach((row, i) => {
+      const el = document.querySelector(`[data-cost="${sec}:${i}"]`);
+      if (!el) return;
+      const c = SECTIONS[sec].cost(row, p);
+      if (typeof c === "object"){ el.textContent = c.warn; el.classList.add("warn"); }
+      else { el.textContent = money(c); el.classList.remove("warn"); }
+    });
+  }
+  const unitName = p.unitName || "piece";
+  const totals = {
+    ingredients: money(r.ingredients) + " per batch",
+    packaging: money(r.packPerPiece) + " per " + unitName,
+    labor: money(r.labor) + " per batch",
+    electricity: money(r.electricity) + " per batch",
+    overhead: money(r.overhead) + " per batch"
+  };
+  for (const [k, v] of Object.entries(totals)) document.querySelector(`[data-total="${k}"]`).textContent = v;
+
+  // per piece
+  const msg = $("#msg");
+  const problems = [];
+  if (!(r.good > 0)) problems.push("Enter pieces per batch.");
+  if (!r.price) problems.push("Enter a selling price.");
+  msg.hidden = !problems.length; msg.textContent = problems.join(" ");
+
+  setNum("rUnit", r.unit); setNum("rPrice", r.price);
+  setNum("rGross", r.gross); setNum("rGrossPct", r.grossPct, "pct"); setNum("rMarkup", r.markup, "pct");
+  setNum("rFees", -r.fees || 0); setNum("rOther", -r.other || 0); setNum("rIncTax", -r.incTax || 0);
+  setNum("rNet", r.net); setNum("rNetPct", r.netPct, "pct");
+  setNum("rBreak", r.breakEven);
+  $("#rNet").classList.toggle("pos", r.net > 0);
+
+  // target
+  $("#tLabel").textContent = `Sell for (${n(p.targetPct)}% ${p.targetType === "gross" ? "gross" : "net"})`;
+  setNum("tPrice", r.target);
+  setNum("tGross", r.tp ? r.tp.gross : NaN);
+  setNum("tNet", r.tp ? r.tp.net : NaN);
+  $("#tMsg").hidden = !r.targetErr; $("#tMsg").textContent = r.targetErr;
+  $("#tUse").hidden = !Number.isFinite(r.target);
+
+  // projection
+  const cols = [["B", r.proj.batch], ["M", r.proj.month], ["Y", r.proj.year]];
+  for (const [s, o] of cols){
+    setNum("pSold" + s, o ? o.sold : NaN, "count");
+    setNum("pRev" + s, o ? o.revenue : NaN, "round");
+    setNum("pCost" + s, o ? o.cost : NaN, "round");
+    setNum("pGross" + s, o ? o.gross : NaN, "round");
+    setNum("pNet" + s, o ? o.net : NaN, "round");
+  }
+  const pm = $("#pMsg");
+  pm.hidden = !!r.proj.month; pm.textContent = "Enter batches a month for the monthly and yearly figures.";
+
+  // breakdown
+  const parts = [
+    ["Ingredients", r.ingredients, "var(--c1)"],
+    ["Packaging", r.packaging, "var(--c2)"],
+    ["Labor", r.labor, "var(--c3)"],
+    ["Electricity", r.electricity, "var(--c4)"],
+    ["Other overhead", r.overhead, "var(--c5)"]
+  ];
+  const total = r.batchCost || 0;
+  $("#bar").replaceChildren(...parts.filter(x => x[1] > 0).map(([name, v, c]) => {
+    const i = document.createElement("i");
+    i.style.width = (v / total * 100) + "%"; i.style.background = c; i.title = name;
+    return i;
+  }));
+  $("#legend").replaceChildren(...parts.flatMap(([name, v, c]) => {
+    const sw = document.createElement("i"); sw.style.background = c;
+    const nm = document.createElement("span"); nm.textContent = name;
+    const amt = document.createElement("span"); amt.className = "num"; amt.textContent = money(r.good > 0 ? v / r.good : NaN);
+    const pc = document.createElement("span"); pc.className = "pct"; pc.textContent = total ? pct(v / total) : "–";
+    return [sw, nm, amt, pc];
+  }));
+
+  // phone strip
+  $("#sUnit").textContent = money(r.unit);
+  $("#sPrice").textContent = money(r.price);
+  $("#sNet").textContent = pct(r.netPct);
+
+  save();
+}
+
+/* ---------- events ---------- */
+document.addEventListener("input", e => {
+  const el = e.target, p = cur();
+  if (el.dataset.k){ p[el.dataset.k] = el.value; update(); }
+  else if (el.dataset.sec){ p[el.dataset.sec][+el.dataset.i][el.dataset.col] = el.value; update(); }
+  else if (el.id === "pName"){ p.name = el.value; const o = $("#pick").selectedOptions[0]; if (o) o.textContent = el.value || "Untitled"; save(); }
+  else if (el.id === "pNotes"){ p.notes = el.value; save(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.dataset.sec || e.target.dataset.k) e.target.dispatchEvent(new Event("input", {bubbles:true}));
+});
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const p = cur();
+  if (b.dataset.add){
+    p[b.dataset.add].push(SECTIONS[b.dataset.add].blank());
+    renderRows(b.dataset.add); update();
+    const rows = document.querySelectorAll(`[data-sec="${b.dataset.add}"] .row`);
+    rows[rows.length - 1]?.querySelector("input")?.focus();
+  } else if (b.dataset.delsec){
+    p[b.dataset.delsec].splice(+b.dataset.i, 1);
+    renderRows(b.dataset.delsec); update();
+  }
+});
+
+$("#tUse").addEventListener("click", () => {
+  const r = calc(cur());
+  if (!Number.isFinite(r.target)) return;
+  cur().price = (Math.ceil(r.target * 100) / 100).toFixed(2);
+  document.querySelector('[data-k="price"]').value = cur().price;
+  update();
+});
+
+$("#pick").addEventListener("change", e => { store.current = e.target.value; renderProduct(); save(); });
+$("#currency").addEventListener("change", e => { store.currency = e.target.value; setFmt(); update(); });
+
+$("#btnNew").addEventListener("click", () => {
+  const p = blankProduct(); store.products.push(p); store.current = p.id;
+  renderPicker(); renderProduct(); $("#pName").select();
+});
+$("#btnCopy").addEventListener("click", () => {
+  const c = structuredClone(cur()); c.id = uid(); c.name = c.name + " (copy)";
+  store.products.push(c); store.current = c.id; renderPicker(); renderProduct();
+});
+$("#btnDel").addEventListener("click", () => {
+  $("#delText").textContent = `Delete ${cur().name || "this product"}?`;
+  $("#delDialog").showModal();
+});
+$("#delDialog").addEventListener("close", () => {
+  if ($("#delDialog").returnValue !== "delete") return;
+  store.products = store.products.filter(p => p.id !== store.current);
+  if (!store.products.length) store.products.push(blankProduct());
+  store.current = store.products[0].id;
+  renderPicker(); renderProduct();
+});
+$("#delDialog").addEventListener("click", e => { if (e.target === e.currentTarget) e.currentTarget.close("cancel"); });
+
+$("#btnExport").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(store, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "costing-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("#btnImport").addEventListener("click", () => $("#importFile").click());
+$("#importFile").addEventListener("change", async e => {
+  const file = e.target.files[0]; e.target.value = "";
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data.products) ? data.products : null;
+    if (!list || !list.length) throw new Error();
+    const keys = Object.keys(SECTIONS);
+    for (const p of list){
+      if (typeof p !== "object" || !p) throw new Error();
+      const base = blankProduct();
+      for (const k of Object.keys(base)) if (p[k] === undefined) p[k] = base[k];
+      for (const k of keys) if (!Array.isArray(p[k])) p[k] = [];
+      p.id = uid();
+      store.products.push(p);
+    }
+    store.current = store.products[store.products.length - list.length].id;
+    renderPicker(); renderProduct();
+  } catch {
+    alert(file.name + " is not a costing file from this calculator.");
+  }
+});
+$("#btnPrint").addEventListener("click", () => window.print());
+
+/* ---------- start ---------- */
+load(); setFmt(); renderPicker(); renderProduct();
+</script>
+</body>
+</html>
