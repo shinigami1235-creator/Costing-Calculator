@@ -66,6 +66,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(
 .g-labor{grid-template-columns:1.8fr .7fr .9fr 1fr .9fr 28px}
 .g-elec{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
 .g-over{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
+.g-inv{grid-template-columns:2.6fr 1fr 28px}
+.headrow.g-inv span{text-align:left!important}
 
 @media (min-width:721px){ .row label span{display:none} }
 @media (max-width:720px){
@@ -215,6 +217,17 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
       <button class="add" type="button" data-add="overhead">Add overhead</button>
     </section>
 
+    <section class="card" data-sec="investment">
+      <h2>Investment <span class="total" data-total="investment"></span></h2>
+      <p class="hint">One-time costs to start, such as machines, moulds, renovation and permits. These go into ROI and payback rather than the cost per piece.</p>
+      <div class="fields" style="margin-bottom:12px">
+        <label class="field">ROI period in months<input type="number" min="1" step="any" inputmode="decimal" data-k="roiMonths"></label>
+      </div>
+      <div class="headrow g-inv"><span>Item</span><span>Amount</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="investment">Add item</button>
+    </section>
+
     <section class="card">
       <h2>Selling</h2>
       <p class="hint">Gross profit is price minus cost. Net profit also takes out the fees and taxes below.</p>
@@ -268,6 +281,20 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
       </dl>
       <p class="msg" id="tMsg" hidden></p>
       <button class="useprice" id="tUse" type="button" hidden>Use this price</button>
+    </div>
+
+    <div class="res">
+      <h2>Return on investment</h2>
+      <p class="msg" id="iMsg" hidden></p>
+      <dl>
+        <dt>Investment</dt><dd id="iTotal"></dd>
+        <dt id="iNetLabel">Net profit</dt><dd id="iNet"></dd>
+        <dt id="iRoiLabel">ROI</dt><dd id="iRoi"></dd>
+        <dt>Annual return</dt><dd id="iAnnual"></dd>
+        <dt>Payback period</dt><dd id="iPayback"></dd>
+        <hr>
+        <dt>Return on batch cost</dt><dd id="iBatch"></dd>
+      </dl>
     </div>
 
     <div class="res">
@@ -390,6 +417,16 @@ const SECTIONS = {
       if (!n(r.amount)) return 0;
       return b ? n(r.amount) / b : {warn:"Set batches a month"};
     }
+  },
+  investment: {
+    grid: "g-inv",
+    noCost: true,
+    cols: [
+      {k:"name", label:"Item", type:"text"},
+      {k:"amount", label:"Amount"}
+    ],
+    blank: () => ({name:"", amount:""}),
+    cost(r){ return n(r.amount); }
   }
 };
 
@@ -402,12 +439,13 @@ function blankProduct(name){
     output: "", unitName: "piece", reject: "0", batchesMonth: "",
     kwhRate: "",
     price: "", feePct: "0", salesTaxPct: "0", otherPerPiece: "0", incomeTaxPct: "0", sellThrough: "100",
-    targetPct: "40", targetType: "net",
+    targetPct: "40", targetType: "net", roiMonths: "12",
     ingredients: [SECTIONS.ingredients.blank()],
     packaging: [SECTIONS.packaging.blank()],
     labor: [SECTIONS.labor.blank()],
     electricity: [SECTIONS.electricity.blank()],
-    overhead: [SECTIONS.overhead.blank()]
+    overhead: [SECTIONS.overhead.blank()],
+    investment: [SECTIONS.investment.blank()]
   };
 }
 
@@ -418,7 +456,7 @@ function exampleProduct(){
     output: "50", unitName: "bar", reject: "4", batchesMonth: "8",
     kwhRate: "12",
     price: "180", feePct: "0", salesTaxPct: "3", otherPerPiece: "5", incomeTaxPct: "0", sellThrough: "90",
-    targetPct: "40", targetType: "net",
+    targetPct: "40", targetType: "net", roiMonths: "12",
     ingredients: [
       {name:"Cacao nibs", buyQty:"10", buyUnit:"kg", price:"4500", useQty:"3.2", useUnit:"kg"},
       {name:"Sugar", buyQty:"1", buyUnit:"kg", price:"90", useQty:"1.5", useUnit:"kg"},
@@ -442,6 +480,11 @@ function exampleProduct(){
       {name:"Rent share", amount:"8000", per:"month"},
       {name:"Water", amount:"600", per:"month"},
       {name:"LPG", amount:"40", per:"batch"}
+    ],
+    investment: [
+      {name:"Melanger", amount:"45000"},
+      {name:"Tempering machine", amount:"60000"},
+      {name:"Polycarbonate moulds", amount:"6000"}
     ]
   };
 }
@@ -454,6 +497,10 @@ function load(){
     store = {currency:"PHP", current: ex.id, products:[ex]};
   }
   if (!store.products.some(p => p.id === store.current)) store.current = store.products[0].id;
+  const base = blankProduct();
+  for (const p of store.products){
+    for (const k of Object.keys(base)) if (p[k] === undefined) p[k] = Array.isArray(base[k]) ? [] : base[k];
+  }
 }
 let saveTimer;
 function save(){
@@ -539,6 +586,18 @@ function calc(p){
     return {sold, revenue, cost: batchCost, gross, net};
   };
   const pb = projBatch();
+  const investment = sum("investment");
+  const monthNet = batches ? pb.net * batches : NaN;
+  const roiMonths = n(p.roiMonths) || 12;
+  const periodNet = monthNet * roiMonths;
+  const roi = {
+    investment, roiMonths, periodNet,
+    roi: investment > 0 ? (periodNet - investment) / investment : NaN,
+    annual: investment > 0 ? monthNet * 12 / investment : NaN,
+    paybackMonths: investment > 0 && monthNet > 0 ? investment / monthNet : NaN,
+    batchReturn: batchCost > 0 ? pb.net / batchCost : NaN,
+    monthNet
+  };
   const scale = (o, k) => Object.fromEntries(Object.entries(o).map(([key, v]) => [key, v * k]));
 
   return {
@@ -550,6 +609,7 @@ function calc(p){
     markup: unit > 0 ? pp.gross / unit : NaN,
     breakEven,
     target, targetErr, tp,
+    roi,
     proj: {batch: pb, month: batches ? scale(pb, batches) : null, year: batches ? scale(pb, batches * 12) : null}
   };
 }
@@ -600,7 +660,7 @@ function renderRows(sec){
     del.type = "button"; del.className = "del"; del.textContent = "✕";
     del.dataset.delsec = sec; del.dataset.i = i;
     del.setAttribute("aria-label", "Remove row");
-    row.append(cost, del);
+    if (def.noCost) row.append(del); else row.append(cost, del);
     return row;
   }));
 }
@@ -639,7 +699,8 @@ function update(){
     packaging: money(r.packPerPiece) + " per " + unitName,
     labor: money(r.labor) + " per batch",
     electricity: money(r.electricity) + " per batch",
-    overhead: money(r.overhead) + " per batch"
+    overhead: money(r.overhead) + " per batch",
+    investment: money(r.roi.investment)
   };
   for (const [k, v] of Object.entries(totals)) document.querySelector(`[data-total="${k}"]`).textContent = v;
 
@@ -676,6 +737,28 @@ function update(){
   }
   const pm = $("#pMsg");
   pm.hidden = !!r.proj.month; pm.textContent = "Enter batches a month for the monthly and yearly figures.";
+
+  // ROI
+  const q = r.roi;
+  setNum("iTotal", q.investment);
+  $("#iNetLabel").textContent = `Net profit in ${n(q.roiMonths)} months`;
+  setNum("iNet", q.periodNet);
+  $("#iRoiLabel").textContent = `ROI after ${n(q.roiMonths)} months`;
+  setNum("iRoi", q.roi, "pct");
+  setNum("iAnnual", q.annual, "pct");
+  const pay = $("#iPayback");
+  if (Number.isFinite(q.paybackMonths)){
+    pay.textContent = q.paybackMonths < 24 ? q.paybackMonths.toFixed(1) + " months" : (q.paybackMonths / 12).toFixed(1) + " years";
+  } else {
+    pay.textContent = q.investment > 0 && q.monthNet <= 0 ? "Not at this price" : "–";
+  }
+  pay.classList.toggle("neg", q.investment > 0 && q.monthNet <= 0);
+  setNum("iBatch", q.batchReturn, "pct");
+  const im = $("#iMsg");
+  const iProblems = [];
+  if (!(q.investment > 0)) iProblems.push("Add your one-time costs under Investment.");
+  if (!n(p.batchesMonth)) iProblems.push("Enter batches a month.");
+  im.hidden = !iProblems.length; im.textContent = iProblems.join(" ");
 
   // breakdown
   const parts = [

@@ -12,10 +12,12 @@ Open `index.html` in a browser. Products are saved in that browser, and Export w
 - Electricity from each machine's watts and hours, at your rate per kWh.
 - Other overhead per batch or per month, split across your batches a month.
 - Reject rate, so broken pieces raise the cost of the ones you sell.
+- Investment, for one-time costs such as machines and moulds. It feeds ROI and payback and stays out of the cost per piece.
 
 ## What it gives back
 
 - Per piece: cost, gross profit, gross margin, markup, fees and taxes, net profit, net margin and break-even price.
 - Recommended price for a target gross or net margin.
 - Projected revenue, production cost, gross profit and net profit per batch, month and year.
+- ROI over a period you set, annual return, payback period and return on each batch's cost.
 - Share of the cost taken by each section.
