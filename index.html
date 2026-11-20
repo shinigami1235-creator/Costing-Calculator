@@ -62,7 +62,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(
 .add:hover{border-color:var(--gold);background:#faf6ec}
 
 .g-ing{grid-template-columns:1.6fr .8fr .8fr .9fr .9fr .8fr .9fr 28px}
-.g-pack{grid-template-columns:1.8fr 1fr 1fr 1fr .9fr 28px}
+.g-pack{grid-template-columns:1.6fr .9fr .9fr .7fr .8fr 1fr 28px}
 .g-labor{grid-template-columns:1.8fr .7fr .9fr 1fr .9fr 28px}
 .g-elec{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
 .g-over{grid-template-columns:1.8fr 1fr 1fr .9fr 28px}
@@ -109,6 +109,10 @@ dl hr{grid-column:1/-1;border:0;border-top:1px solid var(--line);margin:4px 0;wi
 .proj th:first-child,.proj td:first-child{text-align:left;color:var(--muted);font-weight:400}
 .proj thead th{font-size:.78rem;color:var(--muted);font-weight:500;border-bottom:1px solid var(--line)}
 .proj td{font-weight:600}
+.proj tr.lead td{font-size:1.1rem}
+.proj td.neg{color:var(--bad)} .proj td.pos{color:var(--good)}
+.nobox .boxcol{display:none}
+.res dl + dl,.res table + dl{margin-top:10px}
 
 /* phone summary strip */
 .strip{display:none}
@@ -165,11 +169,12 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
 
     <section class="card">
       <h2>Batch</h2>
-      <p class="hint">How many pieces one batch makes and how many batches you run a month.</p>
+      <p class="hint">How many pieces one batch makes, how many go in a box and how many batches you run a month.</p>
       <div class="fields">
         <label class="field">Pieces per batch<input type="number" min="0" step="any" inputmode="decimal" data-k="output"></label>
         <label class="field">Unit name<input type="text" data-k="unitName" placeholder="bar, box, pack"></label>
         <label class="field">Reject rate %<input type="number" min="0" max="99" step="any" inputmode="decimal" data-k="reject"><small>Broken or bloomed pieces you can't sell.</small></label>
+        <label class="field">Pieces per box<input type="number" min="0" step="any" inputmode="decimal" data-k="perBox"><small>Leave blank if you only sell single pieces.</small></label>
         <label class="field">Batches a month<input type="number" min="0" step="any" inputmode="decimal" data-k="batchesMonth"></label>
       </div>
     </section>
@@ -184,8 +189,8 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
 
     <section class="card" data-sec="packaging">
       <h2>Packaging <span class="total" data-total="packaging"></span></h2>
-      <p class="hint">Counted on sellable pieces only. Enter the pack price and how many pieces the pack holds.</p>
-      <div class="headrow g-pack"><span>Item</span><span>Pack price</span><span>Pieces in pack</span><span>Used per piece</span><span>Per piece</span></div>
+      <p class="hint">Counted on sellable pieces only. Enter the pack price and how many the pack holds, then set Per to Box for anything used once per box, like the box itself.</p>
+      <div class="headrow g-pack"><span>Item</span><span>Pack price</span><span>Qty in pack</span><span>Used</span><span>Per</span><span>Cost</span></div>
       <div class="rows"></div>
       <button class="add" type="button" data-add="packaging">Add packaging</button>
     </section>
@@ -232,36 +237,50 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
       <h2>Selling</h2>
       <p class="hint">Gross profit is price minus cost. Net profit also takes out the fees and taxes below.</p>
       <div class="fields">
-        <label class="field">Selling price per piece<input type="number" min="0" step="any" inputmode="decimal" data-k="price"></label>
+        <label class="field">Selling price<input type="number" min="0" step="any" inputmode="decimal" data-k="price"></label>
+        <label class="field">Price is per<select data-k="priceUnit" id="priceUnit"><option value="piece">Piece</option><option value="box">Box</option></select></label>
         <label class="field">Commission and fees %<input type="number" min="0" step="any" inputmode="decimal" data-k="feePct"><small>Reseller cut, Shopee or Lazada fees, card fees.</small></label>
         <label class="field">Sales tax %<input type="number" min="0" step="any" inputmode="decimal" data-k="salesTaxPct"><small>VAT or percentage tax, as a percent of the price.</small></label>
-        <label class="field">Delivery and marketing per piece<input type="number" min="0" step="any" inputmode="decimal" data-k="otherPerPiece"></label>
+        <label class="field"><span id="otherLabel">Delivery and marketing per piece</span><input type="number" min="0" step="any" inputmode="decimal" data-k="otherPerPiece"></label>
         <label class="field">Income tax %<input type="number" min="0" step="any" inputmode="decimal" data-k="incomeTaxPct"><small>Taken from profit.</small></label>
         <label class="field">Sell-through %<input type="number" min="0" max="100" step="any" inputmode="decimal" data-k="sellThrough"><small>Share of sellable pieces you expect to sell, for the projection.</small></label>
       </div>
+    </section>
+
+    <section class="card" data-sec="eventCosts">
+      <h2>Event <span class="total" data-total="eventCosts"></span></h2>
+      <p class="hint">For a bazaar, fair or pop-up where you make a set number of batches. One-time costs like transportation, booth fee and participation fee come out of the event's net profit.</p>
+      <div class="fields" style="margin-bottom:12px">
+        <label class="field">Batches for the event<input type="number" min="0" step="any" inputmode="decimal" data-k="eventBatches"></label>
+        <label class="field">Expected to sell %<input type="number" min="0" max="100" step="any" inputmode="decimal" data-k="eventSell"></label>
+      </div>
+      <div class="headrow g-inv"><span>One-time cost</span><span>Amount</span></div>
+      <div class="rows"></div>
+      <button class="add" type="button" data-add="eventCosts">Add cost</button>
     </section>
   </div>
 
   <aside>
     <div class="res">
-      <h2>Per piece</h2>
+      <h2 id="unitHead">Per piece</h2>
       <p class="msg" id="msg" hidden></p>
-      <div class="big">
-        <div><span>Cost</span><b id="rUnit">0</b></div>
-        <div><span>Selling price</span><b id="rPrice">0</b></div>
-      </div>
+      <table class="proj">
+        <thead><tr><th></th><th class="hPiece">Piece</th><th class="boxcol hBox">Box</th></tr></thead>
+        <tbody>
+          <tr class="lead"><td>Cost</td><td id="rUnit"></td><td class="boxcol" id="rUnitBox"></td></tr>
+          <tr class="lead"><td>Selling price</td><td id="rPrice"></td><td class="boxcol" id="rPriceBox"></td></tr>
+          <tr><td>Gross profit</td><td id="rGross"></td><td class="boxcol" id="rGrossBox"></td></tr>
+          <tr><td>Fees and sales tax</td><td id="rFees"></td><td class="boxcol" id="rFeesBox"></td></tr>
+          <tr><td>Delivery and marketing</td><td id="rOther"></td><td class="boxcol" id="rOtherBox"></td></tr>
+          <tr><td>Income tax</td><td id="rIncTax"></td><td class="boxcol" id="rIncTaxBox"></td></tr>
+          <tr><td>Net profit</td><td id="rNet"></td><td class="boxcol" id="rNetBox"></td></tr>
+          <tr><td>Break-even price</td><td id="rBreak"></td><td class="boxcol" id="rBreakBox"></td></tr>
+        </tbody>
+      </table>
       <dl>
-        <dt>Gross profit</dt><dd id="rGross"></dd>
         <dt>Gross margin</dt><dd id="rGrossPct"></dd>
         <dt>Markup on cost</dt><dd id="rMarkup"></dd>
-        <hr>
-        <dt>Fees and sales tax</dt><dd id="rFees"></dd>
-        <dt>Delivery and marketing</dt><dd id="rOther"></dd>
-        <dt>Income tax</dt><dd id="rIncTax"></dd>
-        <dt>Net profit</dt><dd id="rNet"></dd>
         <dt>Net margin</dt><dd id="rNetPct"></dd>
-        <hr>
-        <dt>Break-even price</dt><dd id="rBreak"></dd>
       </dl>
     </div>
 
@@ -274,13 +293,37 @@ dialog button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
           <option value="gross">Gross</option>
         </select></label>
       </div>
-      <dl>
-        <dt id="tLabel">Sell for</dt><dd id="tPrice"></dd>
-        <dt>Gross profit</dt><dd id="tGross"></dd>
-        <dt>Net profit</dt><dd id="tNet"></dd>
-      </dl>
+      <table class="proj">
+        <thead><tr><th></th><th class="hPiece">Piece</th><th class="boxcol hBox">Box</th></tr></thead>
+        <tbody>
+          <tr class="lead"><td id="tLabel">Sell for</td><td id="tPrice"></td><td class="boxcol" id="tPriceBox"></td></tr>
+          <tr><td>Gross profit</td><td id="tGross"></td><td class="boxcol" id="tGrossBox"></td></tr>
+          <tr><td>Net profit</td><td id="tNet"></td><td class="boxcol" id="tNetBox"></td></tr>
+        </tbody>
+      </table>
       <p class="msg" id="tMsg" hidden></p>
       <button class="useprice" id="tUse" type="button" hidden>Use this price</button>
+    </div>
+
+    <div class="res" id="eventCard" hidden>
+      <h2>Event</h2>
+      <dl>
+        <dt>Batches</dt><dd id="eBatches"></dd>
+        <dt>Made</dt><dd id="eMade"></dd>
+        <dt>Expected to sell</dt><dd id="eSold"></dd>
+        <hr>
+        <dt>Revenue</dt><dd id="eRev"></dd>
+        <dt>Production cost</dt><dd id="eCost"></dd>
+        <dt>Gross profit</dt><dd id="eGross"></dd>
+        <dt>One-time costs</dt><dd id="eOne"></dd>
+        <dt>Fees, taxes, delivery and marketing</dt><dd id="eFees"></dd>
+        <dt>Net profit</dt><dd id="eNet"></dd>
+        <dt>Return on money spent</dt><dd id="eRet"></dd>
+        <hr>
+        <dt>Sales needed to break even</dt><dd id="eBreak"></dd>
+        <dt id="eCostPieceLabel">Cost per piece with event costs</dt><dd id="eCostPiece"></dd>
+        <dt class="boxcol">Cost per box with event costs</dt><dd class="boxcol" id="eCostPieceBox"></dd>
+      </dl>
     </div>
 
     <div class="res">
@@ -376,11 +419,23 @@ const SECTIONS = {
     cols: [
       {k:"name", label:"Item", type:"text"},
       {k:"price", label:"Pack price"},
-      {k:"pcs", label:"Pieces in pack"},
-      {k:"use", label:"Used per piece"}
+      {k:"pcs", label:"Qty in pack"},
+      {k:"use", label:"Used"},
+      {k:"per", label:"Per", type:"select", options:[["piece","Piece"],["box","Box"]]}
     ],
-    blank: () => ({name:"", price:"", pcs:"1", use:"1"}),
-    cost(r){ const p = n(r.pcs); return p ? n(r.price) / p * n(r.use) : 0; }
+    blank: () => ({name:"", price:"", pcs:"1", use:"1", per:"piece"}),
+    each(r){ const q = n(r.pcs); return q ? n(r.price) / q * n(r.use) : 0; },
+    cost(r, p){
+      const c = this.each(r);
+      if (r.per !== "box") return c;
+      if (!c) return 0;
+      return n(p.perBox) ? c / n(p.perBox) : {warn:"Set pieces per box"};
+    },
+    show(r, p){
+      const c = this.cost(r, p);
+      if (typeof c === "object") return c;
+      return money(this.each(r)) + (r.per === "box" ? " / box" : "");
+    }
   },
   labor: {
     grid: "g-labor",
@@ -427,6 +482,16 @@ const SECTIONS = {
     ],
     blank: () => ({name:"", amount:""}),
     cost(r){ return n(r.amount); }
+  },
+  eventCosts: {
+    grid: "g-inv",
+    noCost: true,
+    cols: [
+      {k:"name", label:"One-time cost", type:"text"},
+      {k:"amount", label:"Amount"}
+    ],
+    blank: () => ({name:"", amount:""}),
+    cost(r){ return n(r.amount); }
   }
 };
 
@@ -436,16 +501,18 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 function blankProduct(name){
   return {
     id: uid(), name: name || "New product", notes: "",
-    output: "", unitName: "piece", reject: "0", batchesMonth: "",
+    output: "", unitName: "piece", reject: "0", perBox: "", batchesMonth: "",
     kwhRate: "",
-    price: "", feePct: "0", salesTaxPct: "0", otherPerPiece: "0", incomeTaxPct: "0", sellThrough: "100",
+    price: "", priceUnit: "piece", feePct: "0", salesTaxPct: "0", otherPerPiece: "0", incomeTaxPct: "0", sellThrough: "100",
     targetPct: "40", targetType: "net", roiMonths: "12",
     ingredients: [SECTIONS.ingredients.blank()],
     packaging: [SECTIONS.packaging.blank()],
     labor: [SECTIONS.labor.blank()],
     electricity: [SECTIONS.electricity.blank()],
     overhead: [SECTIONS.overhead.blank()],
-    investment: [SECTIONS.investment.blank()]
+    investment: [SECTIONS.investment.blank()],
+    eventBatches: "", eventSell: "100",
+    eventCosts: [SECTIONS.eventCosts.blank()]
   };
 }
 
@@ -453,9 +520,9 @@ function exampleProduct(){
   return {
     id: uid(), name: "Example: Dark chocolate bar 100 g",
     notes: "Sample figures. Replace them with your own prices or delete this product.",
-    output: "50", unitName: "bar", reject: "4", batchesMonth: "8",
+    output: "50", unitName: "bar", reject: "4", perBox: "6", batchesMonth: "8",
     kwhRate: "12",
-    price: "180", feePct: "0", salesTaxPct: "3", otherPerPiece: "5", incomeTaxPct: "0", sellThrough: "90",
+    price: "180", priceUnit: "piece", feePct: "0", salesTaxPct: "3", otherPerPiece: "5", incomeTaxPct: "0", sellThrough: "90",
     targetPct: "40", targetType: "net", roiMonths: "12",
     ingredients: [
       {name:"Cacao nibs", buyQty:"10", buyUnit:"kg", price:"4500", useQty:"3.2", useUnit:"kg"},
@@ -463,9 +530,10 @@ function exampleProduct(){
       {name:"Cocoa butter", buyQty:"1", buyUnit:"kg", price:"1200", useQty:"300", useUnit:"g"}
     ],
     packaging: [
-      {name:"Printed box", price:"1200", pcs:"100", use:"1"},
-      {name:"Foil wrap", price:"750", pcs:"500", use:"1"},
-      {name:"Label sheet", price:"60", pcs:"24", use:"1"}
+      {name:"Bar sleeve", price:"1200", pcs:"100", use:"1", per:"piece"},
+      {name:"Foil wrap", price:"750", pcs:"500", use:"1", per:"piece"},
+      {name:"Label sheet", price:"60", pcs:"24", use:"1", per:"piece"},
+      {name:"Gift box for 6", price:"1500", pcs:"50", use:"1", per:"box"}
     ],
     labor: [
       {name:"Chocolatier", people:"1", hours:"6", rate:"80"},
@@ -485,6 +553,12 @@ function exampleProduct(){
       {name:"Melanger", amount:"45000"},
       {name:"Tempering machine", amount:"60000"},
       {name:"Polycarbonate moulds", amount:"6000"}
+    ],
+    eventBatches: "3", eventSell: "85",
+    eventCosts: [
+      {name:"Booth fee", amount:"3000"},
+      {name:"Transportation", amount:"1500"},
+      {name:"Participation fee", amount:"1000"}
     ]
   };
 }
@@ -500,6 +574,7 @@ function load(){
   const base = blankProduct();
   for (const p of store.products){
     for (const k of Object.keys(base)) if (p[k] === undefined) p[k] = Array.isArray(base[k]) ? [] : base[k];
+    for (const r of p.packaging) if (!r.per) r.per = "piece";
   }
 }
 let saveTimer;
@@ -544,9 +619,12 @@ function calc(p){
   const batchCost = ingredients + packaging + labor + electricity + overhead;
   const unit = good > 0 ? batchCost / good : NaN;
 
-  const price = n(p.price);
+  const perBox = n(p.perBox);
+  const byBox = p.priceUnit === "box";
+  const boxMissing = byBox && !(perBox > 0);
+  const price = boxMissing ? 0 : byBox ? n(p.price) / perBox : n(p.price);
   const f = n(p.feePct) / 100, t = n(p.salesTaxPct) / 100, it = n(p.incomeTaxPct) / 100;
-  const other = n(p.otherPerPiece);
+  const other = boxMissing ? 0 : byBox ? n(p.otherPerPiece) / perBox : n(p.otherPerPiece);
 
   const perPiece = pr => {
     const gross = pr - unit;
@@ -598,6 +676,29 @@ function calc(p){
     batchReturn: batchCost > 0 ? pb.net / batchCost : NaN,
     monthNet
   };
+  // event: a set number of batches plus one-time costs
+  const eb = n(p.eventBatches);
+  const eventCosts = sum("eventCosts");
+  let event = null;
+  if (eb > 0){
+    const made = good * eb;
+    const sold = made * Math.min(n(p.eventSell), 100) / 100;
+    const revenue = sold * price;
+    const cost = batchCost * eb;
+    const gross = revenue - cost;
+    const fees = revenue * (f + t) + sold * other;
+    const pretax = gross - fees - eventCosts;
+    const net = pretax - Math.max(0, pretax) * it;
+    const spent = cost + eventCosts;
+    const perSale = price * (1 - f - t) - other;
+    event = {
+      eb, made, sold, revenue, cost, gross, fees, oneTime: eventCosts, net,
+      ret: spent > 0 ? net / spent : NaN,
+      breakEven: perSale > 0 ? spent / perSale : NaN,
+      costPiece: made > 0 ? spent / made : NaN
+    };
+  }
+
   const scale = (o, k) => Object.fromEntries(Object.entries(o).map(([key, v]) => [key, v * k]));
 
   return {
@@ -609,7 +710,7 @@ function calc(p){
     markup: unit > 0 ? pp.gross / unit : NaN,
     breakEven,
     target, targetErr, tp,
-    roi,
+    roi, event, eventCosts, perBox, byBox, boxMissing,
     proj: {batch: pb, month: batches ? scale(pb, batches) : null, year: batches ? scale(pb, batches * 12) : null}
   };
 }
@@ -674,6 +775,14 @@ function renderProduct(){
   update();
 }
 
+const plural = w => /(s|x|ch|sh)$/i.test(w) ? w + "es" : w + "s";
+
+function setPair(id, v, perBox, kind){
+  setNum(id, v, kind);
+  const box = document.getElementById(id + "Box");
+  if (box) setNum(id + "Box", perBox > 0 ? v * perBox : NaN, kind);
+}
+
 function setNum(id, v, kind){
   const el = document.getElementById(id);
   el.textContent = kind === "pct" ? pct(v) : kind === "count" ? count(v) : kind === "round" ? moneyR(v) : money(v);
@@ -688,19 +797,21 @@ function update(){
     p[sec].forEach((row, i) => {
       const el = document.querySelector(`[data-cost="${sec}:${i}"]`);
       if (!el) return;
-      const c = SECTIONS[sec].cost(row, p);
+      const def = SECTIONS[sec];
+      const c = def.show ? def.show(row, p) : def.cost(row, p);
       if (typeof c === "object"){ el.textContent = c.warn; el.classList.add("warn"); }
-      else { el.textContent = money(c); el.classList.remove("warn"); }
+      else { el.textContent = typeof c === "number" ? money(c) : c; el.classList.remove("warn"); }
     });
   }
   const unitName = p.unitName || "piece";
   const totals = {
     ingredients: money(r.ingredients) + " per batch",
-    packaging: money(r.packPerPiece) + " per " + unitName,
+    packaging: money(r.packPerPiece) + " per " + unitName + (r.perBox > 0 ? " · " + money(r.packPerPiece * r.perBox) + " per box" : ""),
     labor: money(r.labor) + " per batch",
     electricity: money(r.electricity) + " per batch",
     overhead: money(r.overhead) + " per batch",
-    investment: money(r.roi.investment)
+    investment: money(r.roi.investment),
+    eventCosts: r.eventCosts ? money(r.eventCosts) + " one-time" : ""
   };
   for (const [k, v] of Object.entries(totals)) document.querySelector(`[data-total="${k}"]`).textContent = v;
 
@@ -708,21 +819,31 @@ function update(){
   const msg = $("#msg");
   const problems = [];
   if (!(r.good > 0)) problems.push("Enter pieces per batch.");
-  if (!r.price) problems.push("Enter a selling price.");
+  if (r.boxMissing) problems.push("Enter pieces per box, since the price is per box.");
+  else if (!r.price) problems.push("Enter a selling price.");
   msg.hidden = !problems.length; msg.textContent = problems.join(" ");
 
-  setNum("rUnit", r.unit); setNum("rPrice", r.price);
-  setNum("rGross", r.gross); setNum("rGrossPct", r.grossPct, "pct"); setNum("rMarkup", r.markup, "pct");
-  setNum("rFees", -r.fees || 0); setNum("rOther", -r.other || 0); setNum("rIncTax", -r.incTax || 0);
-  setNum("rNet", r.net); setNum("rNetPct", r.netPct, "pct");
-  setNum("rBreak", r.breakEven);
+  const hasBox = r.perBox > 0, pb = r.perBox;
+  document.body.classList.toggle("nobox", !hasBox);
+  const boxName = hasBox ? `Box of ${count(pb)}` : "Box";
+  $$(".hPiece").forEach(el => el.textContent = unitName.charAt(0).toUpperCase() + unitName.slice(1));
+  $$(".hBox").forEach(el => el.textContent = boxName);
+  $("#unitHead").textContent = hasBox ? `Per ${unitName} and per box` : `Per ${unitName}`;
+  $("#otherLabel").textContent = "Delivery and marketing per " + (p.priceUnit === "box" ? "box" : unitName);
+
+  setPair("rUnit", r.unit, pb); setPair("rPrice", r.price, pb);
+  setPair("rGross", r.gross, pb);
+  setPair("rFees", -r.fees || 0, pb); setPair("rOther", -r.other || 0, pb); setPair("rIncTax", -r.incTax || 0, pb);
+  setPair("rNet", r.net, pb); setPair("rBreak", r.breakEven, pb);
+  setNum("rGrossPct", r.grossPct, "pct"); setNum("rMarkup", r.markup, "pct"); setNum("rNetPct", r.netPct, "pct");
   $("#rNet").classList.toggle("pos", r.net > 0);
+  $("#rNetBox").classList.toggle("pos", r.net > 0);
 
   // target
   $("#tLabel").textContent = `Sell for (${n(p.targetPct)}% ${p.targetType === "gross" ? "gross" : "net"})`;
-  setNum("tPrice", r.target);
-  setNum("tGross", r.tp ? r.tp.gross : NaN);
-  setNum("tNet", r.tp ? r.tp.net : NaN);
+  setPair("tPrice", r.target, pb);
+  setPair("tGross", r.tp ? r.tp.gross : NaN, pb);
+  setPair("tNet", r.tp ? r.tp.net : NaN, pb);
   $("#tMsg").hidden = !r.targetErr; $("#tMsg").textContent = r.targetErr;
   $("#tUse").hidden = !Number.isFinite(r.target);
 
@@ -737,6 +858,36 @@ function update(){
   }
   const pm = $("#pMsg");
   pm.hidden = !!r.proj.month; pm.textContent = "Enter batches a month for the monthly and yearly figures.";
+
+  // event
+  const ev = r.event;
+  $("#eventCard").hidden = !ev;
+  if (ev){
+    const many = plural(unitName);
+    const qty = v => count(v) + " " + many + (hasBox ? ", " + count(Math.floor(v / pb)) + " boxes" : "");
+    $("#eBatches").textContent = count(ev.eb);
+    $("#eMade").textContent = qty(ev.made);
+    $("#eSold").textContent = qty(ev.sold);
+    setNum("eRev", ev.revenue, "round");
+    setNum("eCost", -ev.cost || 0, "round");
+    setNum("eGross", ev.gross, "round");
+    setNum("eOne", -ev.oneTime || 0, "round");
+    setNum("eFees", -ev.fees || 0, "round");
+    setNum("eNet", ev.net, "round");
+    $("#eNet").classList.toggle("pos", ev.net > 0);
+    setNum("eRet", ev.ret, "pct");
+    const be = $("#eBreak");
+    if (Number.isFinite(ev.breakEven)){
+      const pcs = Math.ceil(ev.breakEven);
+      be.textContent = hasBox ? `${count(Math.ceil(ev.breakEven / pb))} boxes (${count(pcs)} ${many})` : `${count(pcs)} ${many}`;
+      be.classList.toggle("neg", pcs > ev.made);
+      if (pcs > ev.made) be.textContent += `, more than the ${count(ev.made)} you make`;
+    } else {
+      be.textContent = "Not at this price"; be.classList.add("neg");
+    }
+    $("#eCostPieceLabel").textContent = `Cost per ${unitName} with event costs`;
+    setPair("eCostPiece", ev.costPiece, pb);
+  }
 
   // ROI
   const q = r.roi;
@@ -783,8 +934,9 @@ function update(){
   }));
 
   // phone strip
-  $("#sUnit").textContent = money(r.unit);
-  $("#sPrice").textContent = money(r.price);
+  const k = p.priceUnit === "box" && hasBox ? pb : 1;
+  $("#sUnit").textContent = money(r.unit * k);
+  $("#sPrice").textContent = money(r.price * k);
   $("#sNet").textContent = pct(r.netPct);
 
   save();
@@ -820,7 +972,8 @@ document.addEventListener("click", e => {
 $("#tUse").addEventListener("click", () => {
   const r = calc(cur());
   if (!Number.isFinite(r.target)) return;
-  cur().price = (Math.ceil(r.target * 100) / 100).toFixed(2);
+  const v = cur().priceUnit === "box" ? r.target * r.perBox : r.target;
+  cur().price = (Math.ceil(v * 100) / 100).toFixed(2);
   document.querySelector('[data-k="price"]').value = cur().price;
   update();
 });
